@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../services/auth_service.dart';
-import 'home_screen.dart';
+import 'registration/registration_step2_screen.dart';
+import 'registration/registration_wizard.dart';
 
+/// Step 1 of the registration wizard: collect the admin email address.
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -13,194 +14,157 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
-  bool _isSubmitting = false;
+  String? _errorText;
 
   @override
   void dispose() {
-    _nameController.dispose();
     _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+  void _onNext() {
+    final email = _emailController.text.trim();
+    final emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
-    setState(() => _isSubmitting = true);
-    final result = AuthService.instance.register(
-      name: _nameController.text,
-      email: _emailController.text,
-      password: _passwordController.text,
-    );
-    setState(() => _isSubmitting = false);
-
-    if (!mounted) return;
-
-    if (result.isSuccess) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-        (route) => false,
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.errorMessage!)),
-      );
+    if (email.isEmpty) {
+      setState(() => _errorText = 'Enter your email address');
+      return;
     }
+    if (!emailPattern.hasMatch(email)) {
+      setState(() => _errorText = 'Enter a valid email address');
+      return;
+    }
+
+    setState(() => _errorText = null);
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => RegistrationStep2Screen(initialEmail: email)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Create account')),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Get started with NuniPOS',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Create an account to start managing your store',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                    ),
-                    const SizedBox(height: 32),
-                    TextFormField(
-                      controller: _nameController,
-                      textInputAction: TextInputAction.next,
-                      autofillHints: const [AutofillHints.name],
-                      decoration: const InputDecoration(
-                        labelText: 'Full name',
-                        prefixIcon: Icon(Icons.person_outline),
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if ((value ?? '').trim().isEmpty) return 'Enter your name';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      autofillHints: const [AutofillHints.email],
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.email_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        final text = value?.trim() ?? '';
-                        if (text.isEmpty) return 'Enter your email';
-                        final emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-                        if (!emailPattern.hasMatch(text)) {
-                          return 'Enter a valid email';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      textInputAction: TextInputAction.next,
-                      autofillHints: const [AutofillHints.newPassword],
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                          ),
-                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                        ),
-                      ),
-                      validator: (value) {
-                        final text = value ?? '';
-                        if (text.isEmpty) return 'Enter a password';
-                        if (text.length < 8) return 'Use at least 8 characters';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _confirmPasswordController,
-                      obscureText: _obscureConfirmPassword,
-                      textInputAction: TextInputAction.done,
-                      autofillHints: const [AutofillHints.newPassword],
-                      onFieldSubmitted: (_) => _submit(),
-                      decoration: InputDecoration(
-                        labelText: 'Confirm password',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                          ),
-                          onPressed: () =>
-                              setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value != _passwordController.text) {
-                          return 'Passwords do not match';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    FilledButton(
-                      onPressed: _isSubmitting ? null : _submit,
-                      style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-                      child: _isSubmitting
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2.5),
-                            )
-                          : const Text('Create account'),
-                    ),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        const Text('Already have an account?'),
-                        TextButton(
-                          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
-                          child: const Text('Sign in'),
-                        ),
-                      ],
-                    ),
-                  ],
+    return RegistrationWizardScaffold(
+      currentStep: 0,
+      onNext: _onNext,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 720),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.person_outline, size: 72, color: Colors.white),
+            const SizedBox(height: 14),
+            const Text(
+              'Registration',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.w300,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const _InfoBanner(
+              text: 'This email will be set to default admin account and can be used '
+                  'to reset password. You can change this email address anytime.',
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              'Your email address',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                letterSpacing: 0.3,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              autofillHints: const [AutofillHints.email],
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              cursorColor: RegistrationColors.accent,
+              onChanged: (_) {
+                if (_errorText != null) setState(() => _errorText = null);
+              },
+              onSubmitted: (_) => _onNext(),
+              decoration: InputDecoration(
+                hintText: 'you@example.com',
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                filled: true,
+                fillColor: RegistrationColors.fieldFill,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(2),
+                  borderSide: const BorderSide(color: RegistrationColors.accent),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(2),
+                  borderSide: const BorderSide(color: RegistrationColors.accent),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(2),
+                  borderSide: const BorderSide(color: RegistrationColors.accent, width: 2),
                 ),
               ),
             ),
-          ),
+            const SizedBox(height: 8),
+            if (_errorText != null)
+              Text(
+                _errorText!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: RegistrationColors.error, fontSize: 12),
+              )
+            else
+              Text(
+                'Your email is kept strictly confidential. We will use your email to '
+                'provide more personalized support and to send you latest updates, '
+                'only if you wish. We hate "spam", too.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 12),
+              ),
+            const SizedBox(height: 16),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+class _InfoBanner extends StatelessWidget {
+  const _InfoBanner({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            width: 48,
+            color: RegistrationColors.accent,
+            child: const Icon(Icons.info_outline, color: Colors.white, size: 22),
+          ),
+          Expanded(
+            child: Container(
+              decoration: const BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: RegistrationColors.accent),
+                  right: BorderSide(color: RegistrationColors.accent),
+                  bottom: BorderSide(color: RegistrationColors.accent),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              alignment: Alignment.centerLeft,
+              child: Text(
+                text,
+                style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.3),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
