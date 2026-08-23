@@ -1,32 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:nunipos/main.dart';
+import 'package:nunipos/screens/home_screen.dart';
+import 'package:nunipos/services/auth_service.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('Login screen shows sign-in form', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
-    expect(find.text('Welcome back'), findsOneWidget);
-    expect(find.widgetWithText(TextFormField, 'Email'), findsOneWidget);
-    expect(find.widgetWithText(TextFormField, 'Password'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Sign in'), findsOneWidget);
+    expect(find.text('Login to your account'), findsOneWidget);
+    expect(find.text('Email'), findsOneWidget);
+    expect(find.text('Password'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Sign in'), findsOneWidget);
   });
 
-  testWidgets('Login validates empty fields', (WidgetTester tester) async {
+  testWidgets('Login sign-in button stays disabled until both fields are filled',
+      (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
-    await tester.pump();
+    OutlinedButton signInButton() => tester.widget<OutlinedButton>(
+          find.widgetWithText(OutlinedButton, 'Sign in'),
+        );
 
-    expect(find.text('Enter your email'), findsOneWidget);
-    expect(find.text('Enter your password'), findsOneWidget);
+    expect(signInButton().onPressed, isNull);
+
+    await tester.enterText(find.byType(TextFormField).first, 'admin@example.com');
+    await tester.pump();
+    expect(signInButton().onPressed, isNull);
+
+    await tester.enterText(find.byType(TextFormField).last, 'password123');
+    await tester.pump();
+    expect(signInButton().onPressed, isNotNull);
   });
 
   testWidgets('Navigates to register screen', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
-    await tester.tap(find.text('Create one'));
+    await tester.tap(find.text('Sign up now!'));
     await tester.pumpAndSettle();
 
     expect(find.text('Registration'), findsOneWidget);
@@ -38,7 +54,7 @@ void main() {
       (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
-    await tester.tap(find.text('Create one'));
+    await tester.tap(find.text('Sign up now!'));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), 'admin@example.com');
@@ -53,7 +69,7 @@ void main() {
   testWidgets('Registration step 2 flags empty passwords on next', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
-    await tester.tap(find.text('Create one'));
+    await tester.tap(find.text('Sign up now!'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'admin@example.com');
     await tester.tap(find.byIcon(Icons.arrow_forward));
@@ -69,7 +85,7 @@ void main() {
       (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
-    await tester.tap(find.text('Create one'));
+    await tester.tap(find.text('Sign up now!'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'admin@example.com');
     await tester.tap(find.byIcon(Icons.arrow_forward));
@@ -97,7 +113,7 @@ void main() {
       (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
-    await tester.tap(find.text('Create one'));
+    await tester.tap(find.text('Sign up now!'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'admin@example.com');
     await tester.tap(find.byIcon(Icons.arrow_forward));
@@ -127,5 +143,455 @@ void main() {
 
     final revealedPasswordField = tester.widget<TextField>(passwordField);
     expect(revealedPasswordField.obscureText, isFalse);
+  });
+
+  testWidgets('Completing the registration wizard creates the account and reaches home',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    await tester.tap(find.text('Sign up now!'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'admin@example.com');
+    await tester.tap(find.byIcon(Icons.arrow_forward));
+    await tester.pumpAndSettle();
+
+    final step2Fields = find.byType(TextField);
+    await tester.enterText(step2Fields.at(0), 'John');
+    await tester.enterText(step2Fields.at(1), 'Doe');
+    await tester.enterText(step2Fields.at(3), 'password123');
+    await tester.enterText(step2Fields.at(4), 'password123');
+    await tester.tap(find.byIcon(Icons.arrow_forward));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Price display'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.arrow_forward));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Choose Layout'), findsOneWidget);
+    expect(find.text('Standard'), findsOneWidget);
+    expect(find.text('Visual'), findsOneWidget);
+    expect(find.byIcon(Icons.check), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.arrow_forward));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Onboarding completed'), findsOneWidget);
+    await tester.tap(find.text('Close & Continue'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No items'), findsOneWidget);
+    expect(find.text('Dola Oil 5 litres'), findsOneWidget);
+  });
+
+  group('Dashboard', () {
+    Future<void> pumpDashboard(WidgetTester tester) async {
+      await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    }
+
+    testWidgets('adding a product shows it in the cart and updates the total', (tester) async {
+      await pumpDashboard(tester);
+
+      final productCard = find.widgetWithText(InkWell, 'Dola Oil 5 litres');
+
+      expect(find.text('No items'), findsOneWidget);
+
+      await tester.tap(productCard);
+      await tester.pump();
+
+      expect(find.text('No items'), findsNothing);
+      expect(find.text('1x 5,120.00'), findsOneWidget);
+      expect(find.text('5,120.00'), findsWidgets);
+
+      await tester.tap(productCard);
+      await tester.pump();
+
+      expect(find.text('2x 5,120.00'), findsOneWidget);
+      expect(find.text('10,240.00'), findsWidgets);
+    });
+
+    testWidgets('removing a cart line empties the cart', (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.text('Dola Oil 5 litres'));
+      await tester.pump();
+      expect(find.text('No items'), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.close).last);
+      await tester.pump();
+
+      expect(find.text('No items'), findsOneWidget);
+    });
+
+    testWidgets('void order clears the cart', (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.text('Dola Oil 5 litres'));
+      await tester.pump();
+      expect(find.text('No items'), findsNothing);
+
+      await tester.tap(find.text('Void order'));
+      await tester.pump();
+
+      expect(find.text('No items'), findsOneWidget);
+    });
+
+    testWidgets('searching filters the product grid', (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.enterText(find.byType(TextField), 'nonexistent product');
+      await tester.pump();
+
+      expect(find.text('Dola Oil 5 litres'), findsNothing);
+      expect(find.text('No products found'), findsOneWidget);
+    });
+
+    testWidgets('search icon opens the search screen and adding a result adds it to cart',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.byIcon(Icons.search).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Select a product to see details'), findsOneWidget);
+
+      await tester.enterText(find.widgetWithText(TextField, 'Search'), 'dola');
+      await tester.pump();
+
+      expect(find.text('Dola Oil 5 litres'), findsOneWidget);
+      await tester.tap(find.text('Dola Oil 5 litres'));
+      await tester.pump();
+
+      expect(find.text('Price:'), findsOneWidget);
+      expect(find.text('5,120.00'), findsOneWidget);
+      expect(find.text('Quantity on hand: 1 Litres'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'OK'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No items'), findsNothing);
+      expect(find.text('1x 5,120.00'), findsOneWidget);
+    });
+
+    testWidgets('search screen cancel does not add anything to the cart', (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.byIcon(Icons.search).first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No items'), findsOneWidget);
+    });
+
+    testWidgets('New sale walks through order name and service type, updating the toolbar',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      expect(find.text('Dine-in'), findsOneWidget);
+
+      await tester.tap(find.text('New sale'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Order or customer name'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'Table 5');
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Service type'), findsOneWidget);
+      await tester.tap(find.text('Takeaway'));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Table 5'), findsOneWidget);
+      expect(find.text('Takeaway'), findsOneWidget);
+      expect(find.text('Dine-in'), findsNothing);
+    });
+
+    testWidgets('New sale cancelled on the order name step leaves the dashboard unchanged',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.widgetWithText(InkWell, 'Dola Oil 5 litres'));
+      await tester.pump();
+      expect(find.text('No items'), findsNothing);
+
+      await tester.tap(find.text('New sale'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dine-in'), findsOneWidget);
+      expect(find.text('No items'), findsNothing);
+    });
+
+    testWidgets('Tapping the service type toolbar button changes it directly', (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.ensureVisible(find.text('Dine-in'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Dine-in'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Service type'), findsOneWidget);
+      await tester.tap(find.text('Takeaway'));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Takeaway'), findsOneWidget);
+      expect(find.text('Dine-in'), findsNothing);
+    });
+
+    testWidgets('Customer search shows Walk-in customer selected by default', (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.ensureVisible(find.text('Customer'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Customer'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Search customer'), findsOneWidget);
+      expect(find.text('Walk-in customer'), findsWidgets);
+      expect(find.text('Address:'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'OK'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Customer'), findsOneWidget);
+    });
+
+    testWidgets('Clearing selected customer disables OK and shows not-selected state',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.ensureVisible(find.text('Customer'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Customer'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Clear selected customer'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Customer not selected'), findsOneWidget);
+      final okButton = tester.widget<ElevatedButton>(find.widgetWithText(ElevatedButton, 'OK'));
+      expect(okButton.onPressed, isNull);
+    });
+
+    testWidgets('Adding a new customer requires a name then attaches it to the sale',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.ensureVisible(find.text('Customer'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Customer'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add new customer'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('New customer'), findsOneWidget);
+      final okBefore = tester.widget<ElevatedButton>(find.widgetWithText(ElevatedButton, 'OK'));
+      expect(okBefore.onPressed, isNull);
+
+      await tester.enterText(find.byType(TextField).first, 'Jane Doe');
+      await tester.pump();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'OK'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Jane Doe'), findsWidgets);
+      await tester.tap(find.widgetWithText(ElevatedButton, 'OK'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Jane Doe'), findsOneWidget);
+    });
+
+    testWidgets('Transfer moves quantity to the destination order and updates the cart',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.widgetWithText(InkWell, 'Dola Oil 5 litres'));
+      await tester.pump();
+      expect(find.text('1x 5,120.00'), findsOneWidget);
+
+      await tester.tap(find.text('Transfer'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Transfer (1)'), findsOneWidget);
+      final okBefore = tester.widget<ElevatedButton>(find.widgetWithText(ElevatedButton, 'OK'));
+      expect(okBefore.onPressed, isNull);
+
+      await tester.tap(find.text('Dola Oil 5 litres'));
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.chevron_right));
+      await tester.pump();
+
+      expect(find.text('Dola Oil 5 litres'), findsOneWidget);
+
+      await tester.tap(find.text('Select order'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Open orders'), findsOneWidget);
+      expect(find.text('No open orders'), findsOneWidget);
+      await tester.tap(find.widgetWithText(OutlinedButton, 'New sale'));
+      await tester.pumpAndSettle();
+
+      final okAfter = tester.widget<ElevatedButton>(find.widgetWithText(ElevatedButton, 'OK'));
+      expect(okAfter.onPressed, isNotNull);
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'OK'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No items'), findsOneWidget);
+      expect(find.text('Transferred to order #1.'), findsOneWidget);
+    });
+
+    testWidgets('Cancelling transfer leaves the cart unchanged', (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.widgetWithText(InkWell, 'Dola Oil 5 litres'));
+      await tester.pump();
+
+      await tester.tap(find.text('Transfer'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('1x 5,120.00'), findsOneWidget);
+    });
+
+    testWidgets('Save sale parks the order and it appears in the Open orders list',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.widgetWithText(InkWell, 'Dola Oil 5 litres'));
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('Save sale'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save sale'));
+      await tester.pump();
+
+      expect(find.text('Order #1 saved.'), findsOneWidget);
+      expect(find.text('No items'), findsOneWidget);
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+
+      await tester.tap(find.widgetWithText(InkWell, 'Dola Oil 5 litres'));
+      await tester.pump();
+      await tester.ensureVisible(find.text('Transfer'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Transfer'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Select order'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Open orders'), findsOneWidget);
+      expect(find.text('5,120.00'), findsOneWidget);
+      expect(find.text('Dine-in'), findsOneWidget);
+    });
+
+    testWidgets('Transfer User re-authenticates with the current password', (tester) async {
+      AuthService.instance.register(
+        name: 'Jane Cashier',
+        email: 'jane.cashier@example.com',
+        password: 'secret123',
+      );
+      await pumpDashboard(tester);
+
+      await tester.tap(find.widgetWithText(InkWell, 'Dola Oil 5 litres'));
+      await tester.pump();
+      await tester.ensureVisible(find.text('Transfer'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Transfer'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('User'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Password'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), 'wrong');
+      await tester.tap(find.widgetWithText(ElevatedButton, 'OK'));
+      await tester.pump();
+      expect(find.text('Incorrect password.'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), 'secret123');
+      await tester.tap(find.widgetWithText(ElevatedButton, 'OK'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Jane Cashier'), findsOneWidget);
+    });
+
+    testWidgets('Transfer rounds selects a whole round at once', (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.widgetWithText(InkWell, 'Dola Oil 5 litres'));
+      await tester.pump();
+      await tester.ensureVisible(find.text('Transfer'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Transfer'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Transfer rounds'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Select rounds to transfer'), findsOneWidget);
+      expect(find.text('#1 (5,120.00)'), findsOneWidget);
+
+      await tester.tap(find.text('Select none'));
+      await tester.pump();
+      var okButton = tester.widget<ElevatedButton>(find.widgetWithText(ElevatedButton, 'OK'));
+      expect(okButton.onPressed, isNull);
+
+      await tester.tap(find.text('Select all'));
+      await tester.pump();
+      okButton = tester.widget<ElevatedButton>(find.widgetWithText(ElevatedButton, 'OK'));
+      expect(okButton.onPressed, isNotNull);
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'OK'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dola Oil 5 litres'), findsOneWidget);
+      final transferOkButton = tester.widget<ElevatedButton>(find.widgetWithText(ElevatedButton, 'OK'));
+      expect(transferOkButton.onPressed, isNull);
+    });
+
+    testWidgets(
+        'Cart discount below cost price shows a warning and applies once confirmed',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      final productCard = find.widgetWithText(InkWell, 'Dola Oil 5 litres');
+      await tester.tap(productCard);
+      await tester.pump();
+      await tester.tap(productCard);
+      await tester.pump();
+      expect(find.text('2x 5,120.00'), findsOneWidget);
+
+      await tester.tap(find.text('Discount'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Apply cart discount'), findsOneWidget);
+      await tester.ensureVisible(find.text('3'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('3'));
+      await tester.pump();
+      await tester.ensureVisible(find.byIcon(Icons.keyboard_return));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.keyboard_return));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Invalid price'), findsOneWidget);
+      expect(
+        find.textContaining('Dola Oil 5 litres'),
+        findsWidgets,
+      );
+
+      await tester.tap(find.text('Yes'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('10,240.00'), findsNWidgets(2));
+      expect(find.text('9,932.80'), findsNWidgets(2));
+    });
   });
 }

@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
+import 'registration/registration_wizard.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   static const routeName = '/login';
+
+  static const _topBarColor = Color(0xFFC0392B);
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -18,15 +21,28 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  bool _obscurePassword = true;
   bool _isSubmitting = false;
 
   @override
+  void initState() {
+    super.initState();
+    _emailController.addListener(_onFieldsChanged);
+    _passwordController.addListener(_onFieldsChanged);
+  }
+
+  @override
   void dispose() {
+    _emailController.removeListener(_onFieldsChanged);
+    _passwordController.removeListener(_onFieldsChanged);
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
+
+  void _onFieldsChanged() => setState(() {});
+
+  bool get _canSubmit =>
+      !_isSubmitting && _emailController.text.isNotEmpty && _passwordController.text.isNotEmpty;
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -61,111 +77,136 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Icon(
-                      Icons.point_of_sale,
-                      size: 56,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Welcome back',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Sign in to continue to NuniPOS',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+      backgroundColor: RegistrationColors.background,
+      body: Column(
+        children: [
+          Container(height: 4, color: LoginScreen._topBarColor),
+          Expanded(
+            child: SafeArea(
+              top: false,
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Login to your account',
+                            style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w400),
                           ),
-                    ),
-                    const SizedBox(height: 32),
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      autofillHints: const [AutofillHints.email],
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.email_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        final text = value?.trim() ?? '';
-                        if (text.isEmpty) return 'Enter your email';
-                        final emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-                        if (!emailPattern.hasMatch(text)) {
-                          return 'Enter a valid email';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      autofillHints: const [AutofillHints.password],
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _submit(),
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                          const SizedBox(height: 24),
+                          const Text('Email', style: TextStyle(color: Colors.white, fontSize: 13)),
+                          const SizedBox(height: 6),
+                          TextFormField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            autofillHints: const [AutofillHints.email],
+                            textInputAction: TextInputAction.next,
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            cursorColor: RegistrationColors.accent,
+                            decoration: _fieldDecoration(),
+                            validator: (value) {
+                              final text = value?.trim() ?? '';
+                              if (text.isEmpty) return 'Enter your email';
+                              final emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                              if (!emailPattern.hasMatch(text)) {
+                                return 'Enter a valid email';
+                              }
+                              return null;
+                            },
                           ),
-                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                        ),
+                          const SizedBox(height: 18),
+                          const Text('Password', style: TextStyle(color: Colors.white, fontSize: 13)),
+                          const SizedBox(height: 6),
+                          TextFormField(
+                            controller: _passwordController,
+                            obscureText: true,
+                            autofillHints: const [AutofillHints.password],
+                            textInputAction: TextInputAction.done,
+                            onFieldSubmitted: (_) => _canSubmit ? _submit() : null,
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            cursorColor: RegistrationColors.accent,
+                            decoration: _fieldDecoration(),
+                            validator: (value) {
+                              if ((value ?? '').isEmpty) return 'Enter your password';
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 24),
+                          OutlinedButton(
+                            onPressed: _canSubmit ? _submit : null,
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              disabledForegroundColor: Colors.white38,
+                              side: const BorderSide(color: Color(0xFF6B6B6B)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                            ),
+                            child: _isSubmitting
+                                ? const SizedBox(
+                                    height: 18,
+                                    width: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                                  )
+                                : const Text('Sign in'),
+                          ),
+                          const SizedBox(height: 24),
+                          Center(
+                            child: Wrap(
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                const Text('Not registered? ', style: TextStyle(color: Colors.white)),
+                                GestureDetector(
+                                  onTap: _isSubmitting ? null : _goToRegister,
+                                  child: Text(
+                                    'Sign up now!',
+                                    style: TextStyle(
+                                      color: RegistrationColors.accent,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      validator: (value) {
-                        if ((value ?? '').isEmpty) return 'Enter your password';
-                        return null;
-                      },
                     ),
-                    const SizedBox(height: 24),
-                    FilledButton(
-                      onPressed: _isSubmitting ? null : _submit,
-                      style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-                      child: _isSubmitting
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2.5),
-                            )
-                          : const Text('Sign in'),
-                    ),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        const Text("Don't have an account?"),
-                        TextButton(
-                          onPressed: _isSubmitting ? null : _goToRegister,
-                          child: const Text('Create one'),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
+    );
+  }
+
+  InputDecoration _fieldDecoration() {
+    const borderColor = Color(0xFF6B6B6B);
+    return InputDecoration(
+      filled: true,
+      fillColor: RegistrationColors.background,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(2),
+        borderSide: const BorderSide(color: borderColor),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(2),
+        borderSide: const BorderSide(color: borderColor),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(2),
+        borderSide: const BorderSide(color: RegistrationColors.accent, width: 2),
+      ),
+      errorStyle: const TextStyle(color: RegistrationColors.error),
     );
   }
 }

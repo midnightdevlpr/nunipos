@@ -1,5 +1,21 @@
 import 'package:flutter/material.dart';
 
+/// Admin details collected across the registration wizard steps, threaded
+/// forward so the final step can create the account.
+class RegistrationDraft {
+  const RegistrationDraft({
+    required this.firstName,
+    required this.lastName,
+    required this.email,
+    required this.password,
+  });
+
+  final String firstName;
+  final String lastName;
+  final String email;
+  final String password;
+}
+
 /// Shared look and chrome for the multi-step registration wizard.
 class RegistrationColors {
   const RegistrationColors._();

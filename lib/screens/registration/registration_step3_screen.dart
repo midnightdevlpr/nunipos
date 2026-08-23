@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
+import 'registration_step4_screen.dart';
 import 'registration_wizard.dart';
 
 enum PriceDisplayMode { afterTax, beforeTax }
 
 /// Step 3 of the registration wizard: whether receipt prices include tax.
 class RegistrationStep3Screen extends StatefulWidget {
-  const RegistrationStep3Screen({super.key});
+  const RegistrationStep3Screen({super.key, required this.draft});
+
+  final RegistrationDraft draft;
 
   @override
   State<RegistrationStep3Screen> createState() => _RegistrationStep3ScreenState();
@@ -21,8 +24,10 @@ class _RegistrationStep3ScreenState extends State<RegistrationStep3Screen> {
       currentStep: 2,
       onBack: () => Navigator.of(context).pop(),
       onNext: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Step 3 complete — next steps coming soon.')),
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => RegistrationStep4Screen(draft: widget.draft, priceDisplayMode: _selected),
+          ),
         );
       },
       child: ConstrainedBox(

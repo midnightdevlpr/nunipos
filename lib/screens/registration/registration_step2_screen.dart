@@ -62,7 +62,16 @@ class _RegistrationStep2ScreenState extends State<RegistrationStep2Screen> {
     }
 
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const RegistrationStep3Screen()),
+      MaterialPageRoute(
+        builder: (_) => RegistrationStep3Screen(
+          draft: RegistrationDraft(
+            firstName: _firstNameController.text.trim(),
+            lastName: _lastNameController.text.trim(),
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          ),
+        ),
+      ),
     );
   }
 
