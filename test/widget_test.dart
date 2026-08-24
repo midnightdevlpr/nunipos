@@ -593,5 +593,91 @@ void main() {
       expect(find.text('10,240.00'), findsNWidgets(2));
       expect(find.text('9,932.80'), findsNWidgets(2));
     });
+
+    testWidgets('Refund walks through receipt entry and receipt-delivery options',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.widgetWithText(InkWell, 'Dola Oil 5 litres'));
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('Refund'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Refund'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Refund items'), findsOneWidget);
+      expect(find.text('TOTAL REFUND AMOUNT'), findsOneWidget);
+      expect(find.text('-5,120.00'), findsOneWidget);
+
+      final okButton = tester.widget<ElevatedButton>(find.widgetWithText(ElevatedButton, 'OK'));
+      expect(okButton.onPressed, isNull);
+
+      await tester.enterText(find.byType(TextField), '1001');
+      await tester.pump();
+      await tester.tap(find.text('CARD'));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'OK'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Actions'), findsOneWidget);
+      expect(find.text('Refund: '), findsOneWidget);
+      expect(find.text('Card:'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Send email'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Send email'));
+      await tester.pump();
+      await tester.ensureVisible(find.widgetWithText(ElevatedButton, 'Done'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Done'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No items'), findsOneWidget);
+      expect(find.text('Refund completed.'), findsOneWidget);
+    });
+
+    testWidgets('Search mode toggle changes the hint text and what is matched',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      expect(find.text('Search products by name, code or barcode'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.qr_code_scanner));
+      await tester.pump();
+      expect(find.text('Search products by barcode'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), 'Dola');
+      await tester.pump();
+      expect(find.text('Dola Oil 5 litres'), findsNothing);
+
+      await tester.enterText(find.byType(TextField), '0000000001');
+      await tester.pump();
+      expect(find.text('Dola Oil 5 litres'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.tag));
+      await tester.pump();
+      expect(find.text('Search products by code'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), '0000000001');
+      await tester.pump();
+      expect(find.text('Dola Oil 5 litres'), findsNothing);
+
+      await tester.enterText(find.byType(TextField), '5l');
+      await tester.pump();
+      expect(find.text('Dola Oil 5 litres'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.sell_outlined));
+      await tester.pump();
+      expect(find.text('Search products by name'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), '0000000001');
+      await tester.pump();
+      expect(find.text('Dola Oil 5 litres'), findsNothing);
+
+      await tester.enterText(find.byType(TextField), 'Dola');
+      await tester.pump();
+      expect(find.text('Dola Oil 5 litres'), findsOneWidget);
+    });
   });
 }

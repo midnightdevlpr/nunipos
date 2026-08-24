@@ -5,6 +5,7 @@ import '../models/cart_item.dart';
 import '../models/customer.dart';
 import '../models/held_order.dart';
 import '../models/product.dart';
+import '../models/search_mode.dart';
 import '../models/service_type.dart';
 import '../services/auth_service.dart';
 import 'dashboard/cart_panel.dart';
@@ -18,6 +19,7 @@ import 'dashboard/new_sale/order_name_screen.dart';
 import 'dashboard/new_sale/service_type_screen.dart';
 import 'dashboard/product_grid.dart';
 import 'dashboard/product_search_screen.dart';
+import 'dashboard/refund/refund_screen.dart';
 import 'dashboard/transfer/transfer_screen.dart';
 import 'login_screen.dart';
 
@@ -53,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<HeldOrder> _heldOrders = [];
   int _nextOrderNumber = 1;
   CartDiscount? _cartDiscount;
+  SearchMode _searchMode = SearchMode.all;
 
   @override
   void initState() {
@@ -69,7 +72,20 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Product> get _filteredProducts {
     final query = _searchController.text.trim().toLowerCase();
     if (query.isEmpty) return _products;
-    return _products.where((p) => p.name.toLowerCase().contains(query)).toList();
+    return _products.where((p) {
+      switch (_searchMode) {
+        case SearchMode.all:
+          return p.name.toLowerCase().contains(query) ||
+              p.code.toLowerCase().contains(query) ||
+              p.barcode.toLowerCase().contains(query);
+        case SearchMode.barcode:
+          return p.barcode.toLowerCase().contains(query);
+        case SearchMode.code:
+          return p.code.toLowerCase().contains(query);
+        case SearchMode.name:
+          return p.name.toLowerCase().contains(query);
+      }
+    }).toList();
   }
 
   double get _subtotal => _cart.fold(0, (sum, item) => sum + item.lineTotal);
@@ -165,7 +181,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _saveSale() {
     if (_cart.isEmpty) {
-      _showComingSoon('Nothing to save');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Add items to the cart before saving the sale.')),
+      );
       return;
     }
     setState(() {
@@ -228,6 +246,34 @@ class _HomeScreenState extends State<HomeScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  Future<void> _openRefund() async {
+    if (_cart.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Add items to the cart before refunding.')),
+      );
+      return;
+    }
+    final completed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => RefundScreen(
+          items: _cart,
+          originalSubtotal: _subtotal,
+          discountedTotal: _total,
+          hasDiscount: _cartDiscount != null,
+        ),
+      ),
+    );
+    if (completed != true || !mounted) return;
+
+    setState(() {
+      _cart.clear();
+      _cartDiscount = null;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Refund completed.')),
+    );
+  }
+
   Future<void> _openSearch() async {
     final selected = await Navigator.of(context).push<Product>(
       MaterialPageRoute(builder: (_) => ProductSearchScreen(products: _products)),
@@ -276,7 +322,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ToolbarAction(icon: Icons.swap_horiz, label: 'Transfer', onTap: _openTransfer),
       ToolbarAction(icon: Icons.percent, label: 'Discount', onTap: _openDiscountDialog),
       ToolbarAction(icon: Icons.add, label: 'New sale', onTap: _startNewSale),
-      ToolbarAction(icon: Icons.assignment_return_outlined, label: 'Refund', onTap: () => _showComingSoon('Refund')),
+      ToolbarAction(icon: Icons.assignment_return_outlined, label: 'Refund', onTap: _openRefund),
       ToolbarAction(icon: Icons.badge_outlined, label: '---', onTap: () => _showComingSoon('This action')),
       ToolbarAction(icon: Icons.inbox_outlined, label: 'Cash drawer', onTap: () => _showComingSoon('Cash drawer')),
       ToolbarAction(
@@ -311,6 +357,8 @@ class _HomeScreenState extends State<HomeScreen> {
           DashboardSecondaryBar(
             cartPanelWidth: _cartPanelWidth,
             searchController: _searchController,
+            searchMode: _searchMode,
+            onSearchModeChanged: (mode) => setState(() => _searchMode = mode),
             onDelete: () => _showComingSoon('Delete'),
             onQuantity: () => _showComingSoon('Quantity'),
             onDash: () => _showComingSoon('This action'),

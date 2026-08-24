@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../models/search_mode.dart';
 import 'dashboard_colors.dart';
 
 /// Full-width bar below the primary toolbar: cart quick-actions on the left
@@ -10,6 +11,8 @@ class DashboardSecondaryBar extends StatelessWidget {
     super.key,
     required this.cartPanelWidth,
     required this.searchController,
+    required this.searchMode,
+    required this.onSearchModeChanged,
     required this.onDelete,
     required this.onQuantity,
     required this.onDash,
@@ -19,6 +22,8 @@ class DashboardSecondaryBar extends StatelessWidget {
 
   final double cartPanelWidth;
   final TextEditingController searchController;
+  final SearchMode searchMode;
+  final ValueChanged<SearchMode> onSearchModeChanged;
   final VoidCallback onDelete;
   final VoidCallback onQuantity;
   final VoidCallback onDash;
@@ -49,13 +54,25 @@ class DashboardSecondaryBar extends StatelessWidget {
           Expanded(
             child: Row(
               children: [
-                _IconChip(icon: Icons.grid_view, onTap: () => onIconAction('Categories')),
-                _IconChip(icon: Icons.qr_code_scanner, onTap: () => onIconAction('Barcode scan')),
-                _IconChip(icon: Icons.tag, onTap: () => onIconAction('Enter SKU')),
+                _IconChip(
+                  glyph: '*',
+                  highlighted: searchMode == SearchMode.all,
+                  onTap: () => onSearchModeChanged(SearchMode.all),
+                ),
+                _IconChip(
+                  icon: Icons.qr_code_scanner,
+                  highlighted: searchMode == SearchMode.barcode,
+                  onTap: () => onSearchModeChanged(SearchMode.barcode),
+                ),
+                _IconChip(
+                  icon: Icons.tag,
+                  highlighted: searchMode == SearchMode.code,
+                  onTap: () => onSearchModeChanged(SearchMode.code),
+                ),
                 _IconChip(
                   icon: Icons.sell_outlined,
-                  highlighted: true,
-                  onTap: () => onIconAction('Product labels'),
+                  highlighted: searchMode == SearchMode.name,
+                  onTap: () => onSearchModeChanged(SearchMode.name),
                 ),
                 const SizedBox(width: 4),
                 Expanded(
@@ -63,9 +80,9 @@ class DashboardSecondaryBar extends StatelessWidget {
                     controller: searchController,
                     style: const TextStyle(color: Colors.white, fontSize: 15),
                     cursorColor: DashboardColors.accentGreen,
-                    decoration: const InputDecoration(
-                      hintText: 'Search products by name',
-                      hintStyle: TextStyle(color: DashboardColors.textMuted),
+                    decoration: InputDecoration(
+                      hintText: searchMode.hintText,
+                      hintStyle: const TextStyle(color: DashboardColors.textMuted),
                       border: InputBorder.none,
                     ),
                   ),
@@ -123,19 +140,21 @@ class _HeaderBox extends StatelessWidget {
 }
 
 class _IconChip extends StatelessWidget {
-  const _IconChip({required this.icon, required this.onTap, this.highlighted = false});
+  const _IconChip({this.icon, this.glyph, required this.onTap, this.highlighted = false})
+      : assert(icon != null || glyph != null);
 
-  final IconData icon;
+  final IconData? icon;
+  final String? glyph;
   final bool highlighted;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final color = highlighted ? DashboardColors.accentBlue : Colors.white;
     return IconButton(
-      icon: Icon(icon, color: Colors.white, size: 20),
-      style: highlighted
-          ? IconButton.styleFrom(backgroundColor: DashboardColors.accentBlue)
-          : null,
+      icon: icon != null
+          ? Icon(icon, color: color, size: 20)
+          : Text(glyph!, style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.bold)),
       onPressed: onTap,
     );
   }
