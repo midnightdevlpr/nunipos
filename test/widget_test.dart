@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:nunipos/main.dart';
+import 'package:nunipos/models/product_colors.dart';
 import 'package:nunipos/screens/home_screen.dart';
 import 'package:nunipos/services/auth_service.dart';
 
@@ -678,6 +679,209 @@ void main() {
       await tester.enterText(find.byType(TextField), 'Dola');
       await tester.pump();
       expect(find.text('Dola Oil 5 litres'), findsOneWidget);
+    });
+
+    testWidgets('Side menu opens with all items and placeholders show coming soon',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+
+      expect(find.text('POS - NuniPOS'), findsOneWidget);
+      expect(find.text('Management'), findsOneWidget);
+      expect(find.text('View sales history'), findsOneWidget);
+      expect(find.text('View open sales'), findsOneWidget);
+      expect(find.text('Cash In / Out'), findsOneWidget);
+      expect(find.text('Credit payments'), findsOneWidget);
+
+      await tester.tap(find.text('View sales history'));
+      await tester.pump();
+      expect(find.text('View sales history coming soon.'), findsOneWidget);
+
+      await tester.dragUntilVisible(
+        find.text('Feedback'),
+        find.byType(ListView),
+        const Offset(0, -100),
+      );
+      expect(find.text('End of day'), findsOneWidget);
+      expect(find.text('User info'), findsOneWidget);
+      expect(find.text('Sign out'), findsOneWidget);
+      expect(find.text('Feedback'), findsOneWidget);
+    });
+
+    testWidgets('Side menu sign out returns to the login screen', (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+      await tester.dragUntilVisible(
+        find.text('Sign out'),
+        find.byType(ListView),
+        const Offset(0, -100),
+      );
+      await tester.tap(find.text('Sign out'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Login to your account'), findsOneWidget);
+    });
+
+    testWidgets('Management opens with its sidebar and a real dashboard page',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Management'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Documents'), findsOneWidget);
+      expect(find.text('Products'), findsOneWidget);
+      await tester.dragUntilVisible(
+        find.text('My company'),
+        find.byType(ListView),
+        const Offset(0, -100),
+      );
+      expect(find.text('My company'), findsOneWidget);
+      expect(find.textContaining('Monthly Sales'), findsOneWidget);
+      expect(find.text('Total Sales'), findsOneWidget);
+      expect(find.text('No data to display'), findsWidgets);
+
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No items'), findsOneWidget);
+    });
+
+    testWidgets('Management Products lets you add, edit, and delete a product',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Management'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Products'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Products count: 1'), findsOneWidget);
+      expect(find.text('Dola Oil 5 litres'), findsOneWidget);
+
+      await tester.ensureVisible(find.widgetWithText(InkWell, 'New product'));
+      await tester.tap(find.widgetWithText(InkWell, 'New product'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('product_name_field')), 'Test Mop');
+      await tester.pump();
+      expect(
+        tester.widget<ElevatedButton>(find.widgetWithText(ElevatedButton, 'Save')).onPressed,
+        isNotNull,
+        reason: 'Save should be enabled once a name is entered',
+      );
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Products count: 2'), findsOneWidget);
+      expect(find.text('Test Mop'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(InkWell, 'Test Mop'));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.ensureVisible(find.widgetWithText(InkWell, 'Edit product'));
+      await tester.tap(find.widgetWithText(InkWell, 'Edit product'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('product_name_field')), 'Test Mop XL');
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Test Mop'), findsNothing);
+      expect(find.text('Test Mop XL'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(InkWell, 'Test Mop XL'));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.ensureVisible(find.widgetWithText(InkWell, 'Delete product'));
+      await tester.tap(find.widgetWithText(InkWell, 'Delete product'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Delete "Test Mop XL"? This cannot be undone.'), findsOneWidget);
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Delete'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Products count: 1'), findsOneWidget);
+      expect(find.text('Test Mop XL'), findsNothing);
+      expect(find.text('Dola Oil 5 litres'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(InkWell, 'Dola Oil 5 litres'), findsOneWidget);
+    });
+
+    testWidgets('Management Products color picker saves and reopens the selected color',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Management'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Products'));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.widgetWithText(InkWell, 'New product'));
+      await tester.tap(find.widgetWithText(InkWell, 'New product'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('product_name_field')), 'Color Test');
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('Image & color'));
+      await tester.tap(find.text('Image & color'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Transparent'), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.arrow_drop_down));
+      await tester.pumpAndSettle();
+
+      // The menu opens scrolled to the current value ('Transparent'), so pick
+      // a color alphabetically next to it rather than one from the far end
+      // of the (virtualized, 150-entry) list.
+      expect(find.text('Turquoise'), findsOneWidget);
+      await tester.tap(find.text('Turquoise'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Turquoise'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Products count: 2'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(InkWell, 'Color Test'));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.ensureVisible(find.widgetWithText(InkWell, 'Edit product'));
+      await tester.tap(find.widgetWithText(InkWell, 'Edit product'));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Image & color'));
+      await tester.tap(find.text('Image & color'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Turquoise'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Cancel'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+
+      final cardContainer = tester.widget<Container>(
+        find.descendant(
+          of: find.widgetWithText(InkWell, 'Color Test'),
+          matching: find.byType(Container),
+        ),
+      );
+      final decoration = cardContainer.decoration as BoxDecoration;
+      expect(decoration.color, productColors['Turquoise']);
     });
   });
 }

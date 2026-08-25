@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../../models/product.dart';
+import '../../models/product_colors.dart';
 import '../../utils/currency.dart';
 import 'dashboard_colors.dart';
 
@@ -45,11 +48,19 @@ class _ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final background = productColors[product.color];
+    final isTinted = background != null && background.a > 0;
+    final contentColor = isTinted && background.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+    final nameColor = isTinted ? contentColor : Colors.white;
+    final priceColor = isTinted ? contentColor.withValues(alpha: 0.75) : DashboardColors.textMuted;
+    final iconColor = isTinted ? contentColor : DashboardColors.accentGreen;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(4),
       child: Container(
         decoration: BoxDecoration(
+          color: isTinted ? background : null,
           border: Border.all(color: DashboardColors.border),
           borderRadius: BorderRadius.circular(4),
         ),
@@ -57,19 +68,31 @@ class _ProductCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(product.icon, color: DashboardColors.accentGreen, size: 40),
+            if (product.imagePath != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: Image.file(
+                  File(product.imagePath!),
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Icon(product.icon, color: iconColor, size: 40),
+                ),
+              )
+            else
+              Icon(product.icon, color: iconColor, size: 40),
             const SizedBox(height: 10),
             Text(
               product.name,
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+              style: TextStyle(color: nameColor, fontWeight: FontWeight.w600, fontSize: 14),
             ),
             const SizedBox(height: 4),
             Text(
               formatCurrency(product.price),
-              style: const TextStyle(color: DashboardColors.textMuted, fontSize: 13),
+              style: TextStyle(color: priceColor, fontSize: 13),
             ),
           ],
         ),

@@ -20,8 +20,10 @@ import 'dashboard/new_sale/service_type_screen.dart';
 import 'dashboard/product_grid.dart';
 import 'dashboard/product_search_screen.dart';
 import 'dashboard/refund/refund_screen.dart';
+import 'dashboard/side_menu.dart';
 import 'dashboard/transfer/transfer_screen.dart';
 import 'login_screen.dart';
+import 'management/management_screen.dart';
 
 /// The main sales screen shown after login/registration.
 class HomeScreen extends StatefulWidget {
@@ -32,8 +34,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const _products = [
-    Product(
+  final List<Product> _products = [
+    const Product(
       name: 'Dola Oil 5 litres',
       price: 5120.00,
       icon: Icons.local_shipping_outlined,
@@ -46,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
   ];
 
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _searchController = TextEditingController();
   final List<CartItem> _cart = [];
   ServiceType _serviceType = ServiceType.dineIn;
@@ -295,16 +298,21 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showMenu() {
-    showMenu<void>(
-      context: context,
-      position: const RelativeRect.fromLTRB(1000, 60, 16, 0),
-      items: [
-        PopupMenuItem<void>(
-          onTap: _logout,
-          child: const Text('Sign out'),
+  void _openSideMenu() {
+    _scaffoldKey.currentState!.openEndDrawer();
+  }
+
+  void _openManagement() {
+    Navigator.of(context).pop();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ManagementScreen(
+          products: _products,
+          onAddProduct: (product) => setState(() => _products.add(product)),
+          onUpdateProduct: (index, product) => setState(() => _products[index] = product),
+          onDeleteProduct: (index) => setState(() => _products.removeAt(index)),
         ),
-      ],
+      ),
     );
   }
 
@@ -346,13 +354,20 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: DashboardColors.background,
+      endDrawer: DashboardSideMenu(
+        businessName: 'POS - NuniPOS',
+        onAction: _showComingSoon,
+        onSignOut: _logout,
+        onOpenManagement: _openManagement,
+      ),
       body: Column(
         children: [
           DashboardToolbar(
             primaryActions: primaryActions,
             shortcutActions: shortcutActions,
-            onMenuTap: _showMenu,
+            onMenuTap: _openSideMenu,
           ),
           DashboardSecondaryBar(
             cartPanelWidth: _cartPanelWidth,
