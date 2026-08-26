@@ -5,6 +5,7 @@ import '../../../models/search_mode.dart';
 import '../../../utils/currency.dart';
 import '../../dashboard/dashboard_colors.dart';
 import 'new_product_screen.dart' show ProductFormPanel;
+import 'print_dialog.dart';
 
 /// The Management area's "Products" section: a single-group product tree on
 /// the left and a searchable, sortable product table on the right. Products
@@ -71,6 +72,10 @@ class _ManagementProductsPageState extends State<ManagementProductsPage> {
   void _showComingSoon(String feature) {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text('$feature coming soon.')));
+  }
+
+  void _openPrintDialog() {
+    showPrintDialog(context);
   }
 
   void _newProduct() {
@@ -179,6 +184,7 @@ class _ManagementProductsPageState extends State<ManagementProductsPage> {
           onNewProduct: _newProduct,
           onEditProduct: hasSelection ? _editProduct : null,
           onDeleteProduct: hasSelection ? _deleteProduct : null,
+          onPrint: _openPrintDialog,
           onComingSoon: _showComingSoon,
         ),
         Expanded(
@@ -349,6 +355,7 @@ class _Toolbar extends StatelessWidget {
     required this.onNewProduct,
     required this.onEditProduct,
     required this.onDeleteProduct,
+    required this.onPrint,
     required this.onComingSoon,
   });
 
@@ -357,6 +364,7 @@ class _Toolbar extends StatelessWidget {
   final VoidCallback onNewProduct;
   final VoidCallback? onEditProduct;
   final VoidCallback? onDeleteProduct;
+  final VoidCallback onPrint;
   final ValueChanged<String> onComingSoon;
 
   @override
@@ -411,7 +419,7 @@ class _Toolbar extends StatelessWidget {
             _ToolbarButton(
               icon: Icons.print_outlined,
               label: 'Print',
-              onTap: () => onComingSoon('Print'),
+              onTap: onPrint,
             ),
             _ToolbarButton(
               icon: Icons.picture_as_pdf_outlined,

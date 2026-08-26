@@ -883,5 +883,142 @@ void main() {
       final decoration = cardContainer.decoration as BoxDecoration;
       expect(decoration.color, productColors['Turquoise']);
     });
+
+    testWidgets('Management Products print opens a printer selection dialog',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Management'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Products'));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.widgetWithText(InkWell, 'Print'));
+      await tester.tap(find.widgetWithText(InkWell, 'Print'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Printer'), findsOneWidget);
+      expect(find.text('Microsoft Print to PDF'), findsOneWidget);
+      expect(find.text('Page range'), findsOneWidget);
+      expect(find.text('Copies'), findsOneWidget);
+
+      await tester.tap(find.text('Current page'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Print'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Printer'), findsNothing);
+      expect(find.textContaining('coming soon'), findsOneWidget);
+    });
+
+    testWidgets('Management Stock shows inventory totals and filters by quantity status',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Management'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Stock'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dola Oil 5 litres'), findsOneWidget);
+      expect(find.text('Negative quantity'), findsOneWidget);
+      expect(find.text('Active products'), findsOneWidget);
+      expect(find.text('Total cost:'), findsOneWidget);
+      expect(find.text('5,120.00'), findsWidgets);
+
+      final negativeSwitch = find.descendant(
+        of: find.widgetWithText(Row, 'Negative quantity').first,
+        matching: find.byType(Switch),
+      );
+      await tester.tap(negativeSwitch);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dola Oil 5 litres'), findsNothing);
+      expect(find.text('No products to display'), findsOneWidget);
+
+      await tester.tap(negativeSwitch);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dola Oil 5 litres'), findsOneWidget);
+    });
+
+    testWidgets('Management Promotions shows the empty state and a coming-soon create flow',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Management'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Promotions'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No promotions'), findsOneWidget);
+      expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
+
+      final editButton = tester.widget<InkWell>(find.widgetWithText(InkWell, 'Edit'));
+      final deleteButton = tester.widget<InkWell>(find.widgetWithText(InkWell, 'Delete'));
+      expect(editButton.onTap, isNull);
+      expect(deleteButton.onTap, isNull);
+
+      await tester.tap(find.text('Create new promotion'));
+      await tester.pump();
+
+      expect(find.textContaining('coming soon'), findsOneWidget);
+    });
+
+    testWidgets('Management Users & security lists the signed-in account as Owner',
+        (tester) async {
+      await tester.pumpWidget(const MyApp());
+
+      await tester.tap(find.text('Sign up now!'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'owner@example.com');
+      await tester.tap(find.byIcon(Icons.arrow_forward));
+      await tester.pumpAndSettle();
+
+      final step2Fields = find.byType(TextField);
+      await tester.enterText(step2Fields.at(0), 'Jane');
+      await tester.enterText(step2Fields.at(1), 'Smith');
+      await tester.enterText(step2Fields.at(3), 'password123');
+      await tester.enterText(step2Fields.at(4), 'password123');
+      await tester.tap(find.byIcon(Icons.arrow_forward));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.arrow_forward));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.arrow_forward));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Onboarding completed'), findsOneWidget);
+      await tester.tap(find.text('Close & Continue'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Management'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Users & security'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Users'), findsWidgets);
+      expect(find.text('Security'), findsOneWidget);
+      expect(find.text('First name'), findsOneWidget);
+      expect(find.text('Jane'), findsOneWidget);
+      expect(find.text('Smith'), findsOneWidget);
+      expect(find.text('owner@example.com'), findsOneWidget);
+      expect(find.text('Owner'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Security'));
+      await tester.tap(find.text('Security'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Security coming soon.'), findsOneWidget);
+    });
   });
 }

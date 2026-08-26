@@ -4,6 +4,9 @@ import '../../models/product.dart';
 import '../dashboard/dashboard_colors.dart';
 import 'management_dashboard_page.dart';
 import 'products/management_products_page.dart';
+import 'promotions/management_promotions_page.dart';
+import 'stock/management_stock_page.dart';
+import 'users/management_users_page.dart';
 
 class ManagementSection {
   const ManagementSection({required this.icon, required this.label});
@@ -121,6 +124,12 @@ class _ManagementScreenState extends State<ManagementScreen> {
           onUpdateProduct: widget.onUpdateProduct,
           onDeleteProduct: widget.onDeleteProduct,
         );
+      case 4:
+        return ManagementStockPage(products: widget.products);
+      case 7:
+        return const ManagementPromotionsPage();
+      case 8:
+        return const ManagementUsersPage();
       default:
         return Center(
           child: Text(
