@@ -1020,5 +1020,38 @@ void main() {
 
       expect(find.text('Security coming soon.'), findsOneWidget);
     });
+
+    testWidgets('Management Countries lists the full ISO country reference table',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Management'));
+      await tester.pumpAndSettle();
+      // Scroll well past "Countries" so it lands away from the sidebar's
+      // clipped bottom edge (a tap right at that edge can land on the
+      // collapse chevron below it instead).
+      await tester.drag(find.byType(ListView), const Offset(0, -300));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Countries'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Name'), findsOneWidget);
+      expect(find.text('Code'), findsOneWidget);
+      expect(find.text('Afghanistan'), findsOneWidget);
+      expect(find.text('AF'), findsOneWidget);
+
+      final editButton = tester.widget<InkWell>(find.widgetWithText(InkWell, 'Edit'));
+      final deleteButton = tester.widget<InkWell>(find.widgetWithText(InkWell, 'Delete'));
+      expect(editButton.onTap, isNull);
+      expect(deleteButton.onTap, isNull);
+
+      await tester.tap(find.text('Afghanistan'));
+      await tester.pump();
+
+      final editButtonAfterSelect = tester.widget<InkWell>(find.widgetWithText(InkWell, 'Edit'));
+      expect(editButtonAfterSelect.onTap, isNotNull);
+    });
   });
 }

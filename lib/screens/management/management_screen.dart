@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/product.dart';
 import '../dashboard/dashboard_colors.dart';
+import 'countries/management_countries_page.dart';
 import 'management_dashboard_page.dart';
 import 'products/management_products_page.dart';
 import 'promotions/management_promotions_page.dart';
@@ -130,6 +131,8 @@ class _ManagementScreenState extends State<ManagementScreen> {
         return const ManagementPromotionsPage();
       case 8:
         return const ManagementUsersPage();
+      case 10:
+        return const ManagementCountriesPage();
       default:
         return Center(
           child: Text(
