@@ -1053,5 +1053,34 @@ void main() {
       final editButtonAfterSelect = tester.widget<InkWell>(find.widgetWithText(InkWell, 'Edit'));
       expect(editButtonAfterSelect.onTap, isNotNull);
     });
+
+    testWidgets('Management Payment types lists Cash, Card, and Check with their defaults',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Management'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Payment types'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cash'), findsOneWidget);
+      expect(find.text('Card'), findsOneWidget);
+      expect(find.text('Check'), findsOneWidget);
+      expect(find.text('Change allowed'), findsOneWidget);
+
+      final deleteButton = tester.widget<InkWell>(find.widgetWithText(InkWell, 'Delete'));
+      expect(deleteButton.onTap, isNull);
+
+      final editButtonBefore = tester.widget<InkWell>(find.widgetWithText(InkWell, 'Edit'));
+      expect(editButtonBefore.onTap, isNull);
+
+      await tester.tap(find.text('Cash'));
+      await tester.pump();
+
+      final editButtonAfter = tester.widget<InkWell>(find.widgetWithText(InkWell, 'Edit'));
+      expect(editButtonAfter.onTap, isNotNull);
+    });
   });
 }

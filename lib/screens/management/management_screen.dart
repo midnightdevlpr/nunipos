@@ -4,6 +4,7 @@ import '../../models/product.dart';
 import '../dashboard/dashboard_colors.dart';
 import 'countries/management_countries_page.dart';
 import 'management_dashboard_page.dart';
+import 'payment_types/management_payment_types_page.dart';
 import 'products/management_products_page.dart';
 import 'promotions/management_promotions_page.dart';
 import 'stock/management_stock_page.dart';
@@ -131,6 +132,8 @@ class _ManagementScreenState extends State<ManagementScreen> {
         return const ManagementPromotionsPage();
       case 8:
         return const ManagementUsersPage();
+      case 9:
+        return const ManagementPaymentTypesPage();
       case 10:
         return const ManagementCountriesPage();
       default:
