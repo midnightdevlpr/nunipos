@@ -5,6 +5,7 @@ import '../dashboard/dashboard_colors.dart';
 import 'countries/management_countries_page.dart';
 import 'management_dashboard_page.dart';
 import 'payment_types/management_payment_types_page.dart';
+import 'price_lists/management_price_lists_page.dart';
 import 'products/management_products_page.dart';
 import 'promotions/management_promotions_page.dart';
 import 'stock/management_stock_page.dart';
@@ -126,6 +127,8 @@ class _ManagementScreenState extends State<ManagementScreen> {
           onUpdateProduct: widget.onUpdateProduct,
           onDeleteProduct: widget.onDeleteProduct,
         );
+      case 3:
+        return ManagementPriceListsPage(products: widget.products);
       case 4:
         return ManagementStockPage(products: widget.products);
       case 7:

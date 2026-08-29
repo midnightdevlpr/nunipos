@@ -1082,5 +1082,27 @@ void main() {
       final editButtonAfter = tester.widget<InkWell>(find.widgetWithText(InkWell, 'Edit'));
       expect(editButtonAfter.onTap, isNotNull);
     });
+
+    testWidgets('Management Price lists shows the Products list with cost/markup/price',
+        (tester) async {
+      await pumpDashboard(tester);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Management'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Price lists'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Price lists'), findsWidgets);
+      expect(find.text('Product groups'), findsOneWidget);
+      expect(find.text('Products'), findsWidgets);
+      expect(find.text('Code'), findsOneWidget);
+      expect(find.text('Dola Oil 5 litres'), findsOneWidget);
+      expect(find.text('Products count: 1'), findsOneWidget);
+
+      final deleteButton = tester.widget<InkWell>(find.widgetWithText(InkWell, 'Delete'));
+      expect(deleteButton.onTap, isNull);
+    });
   });
 }
