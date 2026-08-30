@@ -383,23 +383,6 @@ class _Toolbar extends StatelessWidget {
               label: 'Refresh',
               onTap: onRefresh,
             ),
-            const _ToolbarDivider(),
-            _ToolbarButton(
-              icon: Icons.create_new_folder_outlined,
-              label: 'New group',
-              onTap: null,
-            ),
-            _ToolbarButton(
-              icon: Icons.edit_outlined,
-              label: 'Edit group',
-              onTap: null,
-            ),
-            _ToolbarButton(
-              icon: Icons.folder_delete_outlined,
-              label: 'Delete group',
-              onTap: null,
-            ),
-            const _ToolbarDivider(),
             _ToolbarButton(
               icon: Icons.add,
               label: 'New product',
@@ -415,7 +398,6 @@ class _Toolbar extends StatelessWidget {
               label: 'Delete product',
               onTap: onDeleteProduct,
             ),
-            const _ToolbarDivider(),
             _ToolbarButton(
               icon: Icons.print_outlined,
               label: 'Print',
@@ -427,62 +409,12 @@ class _Toolbar extends StatelessWidget {
               onTap: () => onComingSoon('Save as PDF'),
             ),
             _ToolbarButton(
-              icon: Icons.local_offer_outlined,
-              label: 'Price tags',
-              onTap: () => onComingSoon('Price tags'),
-            ),
-            _ToolbarButton(
-              icon: Icons.call_merge,
-              label: 'Merge',
-              onTap: () => onComingSoon('Merge'),
-            ),
-            _ToolbarButton(
-              icon: Icons.sort,
-              label: 'Sorting',
-              onTap: () => onComingSoon('Sorting'),
-            ),
-            _ToolbarButton(
-              icon: Icons.show_chart,
-              label: 'Mov. avg. price',
-              onTap: () => onComingSoon('Mov. avg. price'),
-            ),
-            _ToolbarButton(
-              icon: Icons.file_download_outlined,
-              label: 'Import',
-              onTap: () => onComingSoon('Import'),
-            ),
-            const _ToolbarDivider(),
-            _ToolbarButton(
-              icon: Icons.file_upload_outlined,
-              label: 'Export',
-              onTap: () => onComingSoon('Export'),
-            ),
-            const _ToolbarDivider(),
-            _ToolbarButton(
               icon: Icons.help_outline,
               label: 'Help',
               onTap: () => onComingSoon('Help'),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ToolbarDivider extends StatelessWidget {
-  const _ToolbarDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 4),
-      child: VerticalDivider(
-        width: 1,
-        thickness: 1,
-        color: DashboardColors.border,
-        indent: 8,
-        endIndent: 8,
       ),
     );
   }
@@ -512,12 +444,15 @@ class _ToolbarButton extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 22),
             const SizedBox(height: 4),
-            Text(
-              label,
-              maxLines: 1,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: color, fontSize: 11),
+            SizedBox(
+              width: 80,
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: color, fontSize: 11),
+              ),
             ),
           ],
         ),
@@ -531,23 +466,28 @@ class _ProductTree extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: DashboardColors.accentBlue,
-          borderRadius: BorderRadius.circular(2),
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.folder_outlined, color: Colors.white, size: 18),
-            SizedBox(width: 8),
-            Text(
-              'Products',
-              style: TextStyle(color: Colors.white, fontSize: 14),
-            ),
-          ],
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: DashboardColors.accentBlue,
+            borderRadius: BorderRadius.circular(2),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.folder_outlined, color: Colors.white, size: 18),
+              SizedBox(width: 8),
+              Text(
+                'Products',
+                style: TextStyle(color: Colors.white, fontSize: 14),
+              ),
+            ],
+          ),
         ),
       ),
     );

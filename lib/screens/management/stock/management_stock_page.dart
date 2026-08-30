@@ -266,20 +266,25 @@ class _ProductTree extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: DashboardColors.accentBlue,
-          borderRadius: BorderRadius.circular(2),
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.folder_outlined, color: Colors.white, size: 18),
-            SizedBox(width: 8),
-            Text('Products', style: TextStyle(color: Colors.white, fontSize: 14)),
-          ],
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: DashboardColors.accentBlue,
+            borderRadius: BorderRadius.circular(2),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.folder_outlined, color: Colors.white, size: 18),
+              SizedBox(width: 8),
+              Text('Products', style: TextStyle(color: Colors.white, fontSize: 14)),
+            ],
+          ),
         ),
       ),
     );
